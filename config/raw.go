@@ -15,11 +15,14 @@ type fn func([]string)
 type BuildSteps struct {
 	Body [][]string
 }
+
 type Project struct {
 	Output    string
 	Sources   []string
 	Extension string
 	Params    []string
+	arch      []string
+	platform  []string
 }
 type Config struct {
 	Proj  Project    `toml:"project"`
@@ -112,7 +115,19 @@ func buildStep() {
 func doBuild(_ []string) {
 	buildStep()
 }
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
 func Do(conf Config) {
+	osList := []string{"android", "linux", "darwin", "dragonfly", "freebsd", "linux", "netbsd", "openbsd", "plan9", "solaris", "windows"}
+	archList := []string{"arm", "386", "amd64", "ppc64ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"}
 	buildConfig = conf
 	m := map[string]fn{
 		"mkdir":  makeDir,
@@ -121,12 +136,25 @@ func Do(conf Config) {
 		"mvfile": mvFile,
 		"build":  doBuild,
 	}
+	c := utils.InitColors()
+	for _, arch := range archList {
+		if contains(archList, arch) == false {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find architecture: "+arch)
+			os.Exit(0)
+		}
+	}
+	for _, Os := range osList {
+		if contains(osList, Os) == false {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find architecture: "+Os)
+			os.Exit(0)
+		}
+	}
+
 	if len(conf.Steps.Body) != 0 {
 		for _, set := range conf.Steps.Body {
 			//if len(set) > 1 {
 			operands := set[1:]
 			if m[set[0]] == nil {
-				c := utils.InitColors()
 				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
 				os.Exit(0)
 			}

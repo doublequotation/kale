@@ -1,9 +1,13 @@
 [steps]
     body = [
-        ["build"]
+        ["mkdir", "wow"],
+        ["build"],
+        ["mvfile", "hi", "wow/hi"]
     ]
 [project]
     params = []
     output = "hi"
     extension = "golang"
     sources = ["hi/*"]
+    arch = ["amd64"]
+    platform = ["linux"]
