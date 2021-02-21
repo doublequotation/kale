@@ -5,6 +5,7 @@ import (
 	Cmd "kale/commands"
 	"kale/utils"
 	"os"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/muesli/termenv"
@@ -78,27 +79,13 @@ func mvFile(dirs []string) {
 		os.Exit(0)
 	}
 }
-func Do(conf Config) {
-	m := map[string]fn{
-		"mkdir":  makeDir,
-		"rmdir":  rmDir,
-		"rmfile": rmFile,
-		"mvfile": mvFile,
-	}
-	if len(conf.Steps.Body) != 0 {
-		for _, set := range conf.Steps.Body {
-			if len(set) > 1 {
-				operands := set[1:]
-				if m[set[0]] == nil {
-					c := utils.InitColors()
-					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
-					os.Exit(0)
-				}
-				m[set[0]](operands)
-			}
-		}
-	}
 
+var buildConfig Config
+
+func buildStep() {
+	c := utils.InitColors()
+	start := time.Now()
+	conf := buildConfig
 	if len(conf.Proj.Sources) == 0 || conf.Proj.Extension == "" || conf.Proj.Output == "" {
 		c := utils.InitColors()
 		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Missing sources data, extension data, or output data in .KALE file. ")
@@ -107,7 +94,6 @@ func Do(conf Config) {
 		var cmd []string = []string{}
 		ext := conf.Proj.Extension
 		if ext != "golang" {
-			c := utils.InitColors()
 			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
 			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
 			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "golang")
@@ -118,6 +104,34 @@ func Do(conf Config) {
 			cmd = append(cmd, "build", "-o", conf.Proj.Output)
 			cmd = append(cmd, params...)
 			Cmd.Build(cmd)
+		}
+	}
+	duration := time.Since(start)
+	fmt.Println(termenv.String("Time: ").Foreground(c.Cyan), duration.Seconds())
+}
+func doBuild(_ []string) {
+	buildStep()
+}
+func Do(conf Config) {
+	buildConfig = conf
+	m := map[string]fn{
+		"mkdir":  makeDir,
+		"rmdir":  rmDir,
+		"rmfile": rmFile,
+		"mvfile": mvFile,
+		"build":  doBuild,
+	}
+	if len(conf.Steps.Body) != 0 {
+		for _, set := range conf.Steps.Body {
+			//if len(set) > 1 {
+			operands := set[1:]
+			if m[set[0]] == nil {
+				c := utils.InitColors()
+				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
+				os.Exit(0)
+			}
+			m[set[0]](operands)
+			//}
 		}
 	}
 }

@@ -1,7 +1,9 @@
 [steps]
-    body = []
+    body = [
+        ["build"]
+    ]
 [project]
-    sources = ["hi/*"]
-    extension = "golang"
     params = []
     output = "hi"
+    extension = "golang"
+    sources = ["hi/*"]
