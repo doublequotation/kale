@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	Cmd "kale/commands"
 	"kale/utils"
 	"os"
 
@@ -17,6 +18,7 @@ type Project struct {
 	Output    string
 	Sources   []string
 	Extension string
+	Params    []string
 }
 type Config struct {
 	Proj  Project    `toml:"project"`
@@ -102,7 +104,7 @@ func Do(conf Config) {
 		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Missing sources data, extension data, or output data in .KALE file. ")
 		os.Exit(0)
 	} else {
-		var cmd []string = []string{""}
+		var cmd []string = []string{}
 		ext := conf.Proj.Extension
 		if ext != "golang" {
 			c := utils.InitColors()
@@ -112,7 +114,10 @@ func Do(conf Config) {
 			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "cpp (coming soon)")
 			os.Exit(0)
 		} else {
-			cmd = append(cmd, "-o", conf.Proj.Output)
+			params := conf.Proj.Params
+			cmd = append(cmd, "build", "-o", conf.Proj.Output)
+			cmd = append(cmd, params...)
+			Cmd.Build(cmd)
 		}
 	}
 }
