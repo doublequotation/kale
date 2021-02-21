@@ -2,5 +2,6 @@
     body = []
 [project]
     sources = ["hi/*"]
-    extension = "cpp"
-    params = ["-hi"]
+    extension = "golang"
+    params = []
+    output = "hi"
