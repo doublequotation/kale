@@ -1,6 +1,5 @@
 [steps]
-    body = [
-    ]
+    body = []
 [project]
     sources = ["hi/*"]
     extension = "cpp"
