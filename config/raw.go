@@ -21,8 +21,7 @@ type Project struct {
 	Sources   []string
 	Extension string
 	Params    []string
-	arch      []string
-	platform  []string
+	Target    [][]string
 }
 type Config struct {
 	Proj  Project    `toml:"project"`
@@ -126,8 +125,20 @@ func contains(s []string, str string) bool {
 }
 
 func Do(conf Config) {
-	osList := []string{"android", "linux", "darwin", "dragonfly", "freebsd", "linux", "netbsd", "openbsd", "plan9", "solaris", "windows"}
-	archList := []string{"arm", "386", "amd64", "ppc64ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"}
+	s := map[string][]string{
+		"android":   {"arm"},
+		"darwin":    {"386", "amd64", "arm", "arm64"},
+		"dragonfly": {"amd64"},
+		"freebsd":   {"386", "amd64", "arm"},
+		"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
+		"netbsd":    {"386", "amd64", "arm"},
+		"openbsd":   {"386", "amd64", "arm"},
+		"plan9":     {"386", "amd64"},
+		"solaris":   {"amd64"},
+		"windows":   {"386", "amd64"},
+	}
+	//osList := []string{"android", "linux", "darwin", "dragonfly", "freebsd", "linux", "netbsd", "openbsd", "plan9", "solaris", "windows"}
+	//	archList := []string{"arm", "386", "amd64", "ppc64ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"}
 	buildConfig = conf
 	m := map[string]fn{
 		"mkdir":  makeDir,
@@ -137,15 +148,13 @@ func Do(conf Config) {
 		"build":  doBuild,
 	}
 	c := utils.InitColors()
-	for _, arch := range archList {
-		if contains(archList, arch) == false {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find architecture: "+arch)
+	for _, pair := range conf.Proj.Target {
+		if len(s[pair[0]]) == 0 {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
 			os.Exit(0)
 		}
-	}
-	for _, Os := range osList {
-		if contains(osList, Os) == false {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find architecture: "+Os)
+		if contains(s[pair[0]], pair[1]) == false {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
 			os.Exit(0)
 		}
 	}

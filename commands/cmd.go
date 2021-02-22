@@ -11,6 +11,7 @@ import (
 )
 
 func Build(params []string) {
+
 	command := exec.Command("go", params...)
 	c := utils.InitColors()
 	stderr, err := command.StderrPipe()

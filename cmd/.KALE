@@ -9,5 +9,4 @@
     output = "hi"
     extension = "golang"
     sources = ["hi/*"]
-    arch = ["amd64"]
-    platform = ["linux"]
+    target = [["linux", "amd64"], ["darwin", "hi"]]
