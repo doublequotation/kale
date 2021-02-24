@@ -1,12 +1,10 @@
 [steps]
     body = [
-        ["mkdir", "wow"],
         ["build"],
-        ["mvfile", "hi", "wow/hi"]
     ]
 [project]
     params = []
     output = "hi"
     extension = "golang"
     sources = ["hi/*"]
-    target = [["linux", "amd64"], ["darwin", "hi"]]
+    target = [["linux", "amd64"], ["darwin", "amd64"]]
