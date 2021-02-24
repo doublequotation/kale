@@ -42,6 +42,7 @@ func indexOf(element string, data []string) int {
 	return -1 //not found.
 }
 func Build(params []string, pre []string) {
+	c := utils.InitColors()
 	if len(pre) != 0 {
 		for _, str := range pre {
 			outName := params[indexOf("-o", params)+1]
@@ -50,7 +51,10 @@ func Build(params []string, pre []string) {
 			nStr := strings.Split(str, " ")
 			params[indexOf("-o", params)+1] = params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[1], "=")[1] + "-" + strings.Split(nStr[2], "=")[1]
 			nStr = append(nStr, params...)
-			fmt.Println(nStr)
+			fmt.Println(termenv.String("Compiled: ").Foreground(c.Green).Bold(), params[indexOf("-o", params)+1])
+			fmt.Println(termenv.String("\t- OS:  ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
+			fmt.Println(termenv.String("\t- ARCHITECTURE:  ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
+			fmt.Println(termenv.String("\t- PARAMS:  ").Foreground(c.Cyan).Bold(), strings.Join(params, " "))
 			rawBuild(nStr...)
 			params[indexOf("-o", params)+1] = outName
 		}
