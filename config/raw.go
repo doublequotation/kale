@@ -83,7 +83,15 @@ func mvFile(dirs []string) {
 }
 
 var buildConfig Config
+var validPairs [][]string = [][]string{}
 
+func pairToEnv() []string {
+	pgroup := []string{}
+	for _, p := range validPairs {
+		pgroup = append(pgroup, "env GOOS="+p[0]+" GOARCH="+p[1])
+	}
+	return pgroup
+}
 func buildStep() {
 	c := utils.InitColors()
 	start := time.Now()
@@ -103,9 +111,9 @@ func buildStep() {
 			os.Exit(0)
 		} else {
 			params := conf.Proj.Params
-			cmd = append(cmd, "build", "-o", conf.Proj.Output)
+			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
 			cmd = append(cmd, params...)
-			Cmd.Build(cmd)
+			Cmd.Build(cmd, pairToEnv())
 		}
 	}
 	duration := time.Since(start)
@@ -127,7 +135,7 @@ func contains(s []string, str string) bool {
 func Do(conf Config) {
 	s := map[string][]string{
 		"android":   {"arm"},
-		"darwin":    {"386", "amd64", "arm", "arm64"},
+		"darwin":    {"386", "amd64", "arm64"},
 		"dragonfly": {"amd64"},
 		"freebsd":   {"386", "amd64", "arm"},
 		"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
@@ -153,12 +161,27 @@ func Do(conf Config) {
 			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
 			os.Exit(0)
 		}
-		if contains(s[pair[0]], pair[1]) == false {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
-			os.Exit(0)
+		validPairs = append(validPairs, []string{pair[0]})
+		if len(pair[1:]) > 1 {
+			for i, target := range pair[1:] {
+				if contains(s[pair[0]], target) == false {
+					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
+					os.Exit(0)
+				}
+				if i == 0 {
+					validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+				} else {
+					validPairs = append(validPairs, []string{pair[0], target})
+				}
+			}
+		} else {
+			if contains(s[pair[0]], pair[1]) == false {
+				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
+				os.Exit(0)
+			}
+			validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
 		}
 	}
-
 	if len(conf.Steps.Body) != 0 {
 		for _, set := range conf.Steps.Body {
 			//if len(set) > 1 {
