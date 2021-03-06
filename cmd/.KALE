@@ -6,5 +6,5 @@
     params = []
     output = "hi"
     extension = "golang"
-    sources = ["hi/*"]
+    sources = ["./*"]
     # target = [["linux", "amd64"], ["darwin", "amd64", "arm64"], ["windows", "386"]]

@@ -5,6 +5,7 @@ import (
 	Cmd "kale/commands"
 	"kale/utils"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -112,7 +113,23 @@ func buildStep() {
 		} else {
 			params := conf.Proj.Params
 			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
+			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
+				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
+				files, dirErr := os.ReadDir(path)
+				if dirErr != nil {
+					c := utils.InitColors()
+					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), dirErr)
+					os.Exit(0)
+				}
+				conf.Proj.Sources = []string{}
+				for _, dir := range files {
+					if strings.HasSuffix(dir.Name(), ".go") {
+						conf.Proj.Sources = append(conf.Proj.Sources, dir.Name())
+					}
+				}
+			}
 			cmd = append(cmd, params...)
+			cmd = append(cmd, conf.Proj.Sources...)
 			Cmd.Build(cmd, pairToEnv())
 		}
 	}
