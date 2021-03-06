@@ -49,12 +49,14 @@ func Build(params []string, pre []string) {
 			params[indexOf("-o", params)+1] = outName
 			// params := strings.Join(params, " ")
 			nStr := strings.Split(str, " ")
-			params[indexOf("-o", params)+1] = params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[1], "=")[1] + "-" + strings.Split(nStr[2], "=")[1]
+			//if _, err := os.Mkdir(strings.Split(nStr[1], "=")[1], 0755); os.IsNotExist(err) == true {
+			//}
+			params[indexOf("-o", params)+1] = strings.Split(nStr[1], "=")[1] + "/" + params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[2], "=")[1]
 			nStr = append(nStr, params...)
 			fmt.Println(termenv.String("Compiled: ").Foreground(c.Green).Bold(), params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- OS:  ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- ARCHITECTURE:  ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- PARAMS:  ").Foreground(c.Cyan).Bold(), strings.Join(params, " "))
+			fmt.Println(termenv.String("\t- OS: ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
+			fmt.Println(termenv.String("\t- ARCHITECTURE: ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
+			fmt.Println(termenv.String("\t- PARAMS: ").Foreground(c.Cyan).Bold(), strings.Join(params[1:], " "))
 			rawBuild(nStr...)
 			params[indexOf("-o", params)+1] = outName
 		}
