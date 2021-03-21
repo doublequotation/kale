@@ -133,7 +133,6 @@ func buildStep() {
 			os.Exit(0)
 		} else {
 			params := conf.Proj.Params
-			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
 			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
 				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
 				files, dirErr := os.ReadDir(path)
@@ -153,7 +152,7 @@ func buildStep() {
 						conf.Proj.Sources = append(conf.Proj.Sources, dir.Name())
 					}
 				}
-			} else {
+			} else if len(conf.Proj.Sources) > 1 {
 				for _, file := range conf.Proj.Sources {
 					filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 					cmd[3] = (filePather.FindStringSubmatch(file))[2]
@@ -161,6 +160,9 @@ func buildStep() {
 					newList = append(cmd, file)
 					Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
 				}
+			} else {
+				cmd = append(cmd, "go", "build", "-o", conf.Proj.Output, conf.Proj.Sources[0])
+				Cmd.Build(cmd, pairToEnv(), "")
 			}
 		}
 	}
