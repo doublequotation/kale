@@ -41,7 +41,7 @@ func indexOf(element string, data []string) int {
 	}
 	return -1 //not found.
 }
-func Build(params []string, pre []string) {
+func Build(params []string, pre []string, output string) {
 	c := utils.InitColors()
 	if len(pre) != 0 {
 		for _, str := range pre {
@@ -51,7 +51,7 @@ func Build(params []string, pre []string) {
 			nStr := strings.Split(str, " ")
 			//if _, err := os.Mkdir(strings.Split(nStr[1], "=")[1], 0755); os.IsNotExist(err) == true {
 			//}
-			params[indexOf("-o", params)+1] = strings.Split(nStr[1], "=")[1] + "/" + params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[2], "=")[1]
+			params[indexOf("-o", params)+1] = output + strings.Split(nStr[1], "=")[1] + "/" + params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[2], "=")[1]
 			nStr = append(nStr, params...)
 			fmt.Println(termenv.String("Compiled: ").Foreground(c.Green).Bold(), params[indexOf("-o", params)+1])
 			fmt.Println(termenv.String("\t- OS: ").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])

@@ -5,6 +5,7 @@ import (
 	Cmd "kale/commands"
 	"kale/utils"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,6 +50,26 @@ func makeDir(dirs []string) {
 	}
 }
 
+func copyFile(sourceFile, destinationFile string) {
+	input, err := os.ReadFile(sourceFile)
+	if err != nil {
+		c := utils.InitColors()
+		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
+		os.Exit(0)
+	}
+
+	err = os.WriteFile(destinationFile, input, 0644)
+	if err != nil {
+		c := utils.InitColors()
+		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
+		os.Exit(0)
+	}
+}
+func cpAny(dirs []string) {
+	for _, dir := range dirs[1:] {
+		copyFile(dirs[0], dir)
+	}
+}
 func rmDir(dirs []string) {
 	for _, dir := range dirs {
 		err := os.RemoveAll(dir)
@@ -124,13 +145,23 @@ func buildStep() {
 				conf.Proj.Sources = []string{}
 				for _, dir := range files {
 					if strings.HasSuffix(dir.Name(), ".go") {
+						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+						cmd[3] = (filePather.FindStringSubmatch(dir.Name()))[2]
+						newList := append(cmd, params...)
+						newList = append(cmd, dir.Name())
+						Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
 						conf.Proj.Sources = append(conf.Proj.Sources, dir.Name())
 					}
 				}
+			} else {
+				for _, file := range conf.Proj.Sources {
+					filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+					cmd[3] = (filePather.FindStringSubmatch(file))[2]
+					newList := append(cmd, params...)
+					newList = append(cmd, file)
+					Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
+				}
 			}
-			cmd = append(cmd, params...)
-			cmd = append(cmd, conf.Proj.Sources...)
-			Cmd.Build(cmd, pairToEnv())
 		}
 	}
 	duration := time.Since(start)
@@ -170,6 +201,7 @@ func Do(conf Config) {
 		"rmdir":  rmDir,
 		"rmfile": rmFile,
 		"mvfile": mvFile,
+		"copy":   cpAny,
 		"build":  doBuild,
 	}
 	c := utils.InitColors()
