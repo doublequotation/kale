@@ -191,7 +191,7 @@ func buildStep() {
 					Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
 				}
 			} else {
-				cmd = append(cmd, "go", "build", "-o", conf.Proj.Output, conf.Proj.Sources[0])
+				cmd = append(cmd, conf.Proj.Sources[0])
 				Cmd.Build(cmd, pairToEnv(), "")
 			}
 		}
