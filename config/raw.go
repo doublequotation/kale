@@ -133,6 +133,7 @@ func buildStep() {
 			os.Exit(0)
 		} else {
 			params := conf.Proj.Params
+			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
 			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
 				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
 				files, dirErr := os.ReadDir(path)
@@ -149,7 +150,7 @@ func buildStep() {
 						newList := append(cmd, params...)
 						newList = append(cmd, dir.Name())
 						Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
-						conf.Proj.Sources = append(conf.Proj.Sources, dir.Name())
+						conf.Proj.Sources = append(conf.Proj.Sources, conf.Proj.Output)
 					}
 				}
 			} else if len(conf.Proj.Sources) > 1 {

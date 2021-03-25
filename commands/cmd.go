@@ -61,6 +61,7 @@ func Build(params []string, pre []string, output string) {
 			params[indexOf("-o", params)+1] = outName
 		}
 	} else {
+		params[indexOf("-o", params)+1] = output + params[indexOf("-o", params)+1]
 		rawBuild(params...)
 	}
 }
