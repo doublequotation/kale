@@ -3,8 +3,13 @@ package command
 import (
 	"fmt"
 	"io/ioutil"
+	"kale/utils"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/muesli/termenv"
 )
 
 var path string
@@ -12,6 +17,23 @@ var path string
 type valid struct {
 	Name  string
 	Value string
+}
+
+func Err(err string) {
+	c := utils.InitColors()
+	fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
+	os.Exit(0)
+}
+
+func Transfer(path string) {
+	rm := exec.Command("rm", path)
+	rm.Stdout = os.Stdout
+	rm.Stderr = os.Stdin
+	rm.Run()
+	mv := exec.Command("mv", path+".copy", path)
+	mv.Stdout = os.Stdout
+	mv.Stderr = os.Stderr
+	mv.Run()
 }
 
 func Zap(evs []string, name string) {
@@ -24,11 +46,11 @@ func Zap(evs []string, name string) {
 	// f, _ := os.OpenFile(flag.Param, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	contentB, err := ioutil.ReadFile(name)
 	if err != nil {
-		fmt.Println(err)
+		Err(err.Error())
 	}
 	er := ioutil.WriteFile(name+".copy", []byte(contentB), 0644)
 	if er != nil {
-		fmt.Println(er)
+		Err(er.Error())
 	}
 	path = name
 	content := string(contentB)
@@ -54,5 +76,4 @@ func Zap(evs []string, name string) {
 
 	file := strings.Join(sN, "\n")
 	ioutil.WriteFile(name, []byte(file), 0644)
-	//build()
 }

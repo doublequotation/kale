@@ -25,9 +25,14 @@ type Project struct {
 	Params    []string
 	Target    [][]string
 }
+type Zap struct {
+	Env     []string
+	Sources []string
+}
 type Config struct {
 	Proj  Project    `toml:"project"`
 	Steps BuildSteps `toml:"steps"`
+	Zap   Zap        `toml:"zap"`
 }
 
 func Read(content string) Config {
@@ -114,6 +119,29 @@ func pairToEnv() []string {
 	}
 	return pgroup
 }
+func ZapStep() {
+	conf := buildConfig
+	if len(conf.Zap.Env) == 0 && len(conf.Zap.Sources) >= 1 {
+		c := utils.InitColors()
+		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Cannot inject environment variables with no variables.")
+		os.Exit(0)
+	}
+	listing := []string{}
+	for _, env := range conf.Zap.Env {
+		Var, exists := os.LookupEnv(env)
+		if exists == false {
+			c := utils.InitColors()
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "No environment variable named", termenv.String(env).Foreground(c.Cyan))
+			os.Exit(0)
+		}
+		listing = append(listing, env+"="+Var)
+	}
+
+	for _, name := range conf.Zap.Sources {
+
+		Cmd.Zap(listing, name)
+	}
+}
 func buildStep() {
 	c := utils.InitColors()
 	start := time.Now()
@@ -132,6 +160,7 @@ func buildStep() {
 			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "cpp (coming soon)")
 			os.Exit(0)
 		} else {
+			ZapStep()
 			params := conf.Proj.Params
 			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
 			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
@@ -168,6 +197,9 @@ func buildStep() {
 		}
 	}
 	duration := time.Since(start)
+	for _, path := range conf.Zap.Sources {
+		Cmd.Transfer(path)
+	}
 	fmt.Println(termenv.String("Time: ").Foreground(c.Cyan), duration.Seconds())
 }
 func doBuild(_ []string) {
@@ -185,8 +217,7 @@ func contains(s []string, str string) bool {
 
 func Do(conf Config) {
 	s := map[string][]string{
-		"android":   {"arm"},
-		"darwin":    {"386", "amd64", "arm64"},
+		"android": {"arm"}, "darwin": {"386", "amd64", "arm64"},
 		"dragonfly": {"amd64"},
 		"freebsd":   {"386", "amd64", "arm"},
 		"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
