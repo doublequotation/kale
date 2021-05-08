@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	Cmd "kale/commands"
+	cBuild "kale/commands/c"
 	"kale/utils"
 	"os"
 	"regexp"
@@ -29,8 +30,15 @@ type Zap struct {
 	Env     []string
 	Sources []string
 }
+
+type C struct {
+	Linker   string
+	Compiler string
+}
+
 type Config struct {
 	Proj  Project    `toml:"project"`
+	C     C          `toml:"c"`
 	Steps BuildSteps `toml:"steps"`
 	Zap   Zap        `toml:"zap"`
 }
@@ -189,7 +197,37 @@ func buildStep() {
 				Cmd.Build(cmd, pairToEnv(), "")
 			}
 		} else if ext == "cpp" {
-
+			home, _ := os.UserHomeDir()
+			os.Setenv("WORKDIR", home+"/.config/kale")
+			os.MkdirAll(home+"/.config/kale", 0755)
+			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
+				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
+				files, dirErr := os.ReadDir(path)
+				if dirErr != nil {
+					c := utils.InitColors()
+					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), dirErr)
+					os.Exit(0)
+				}
+				conf.Proj.Sources = []string{}
+				var cmd [][]string = [][]string{}
+				if buildConfig.C.Compiler == "" {
+					fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Defaulting to g++")
+				}
+				objects := []string{}
+				for _, dir := range files {
+					if strings.HasSuffix(dir.Name(), "cpp") || strings.HasSuffix(dir.Name(), "cc") {
+						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+						name := (filePather.FindStringSubmatch(dir.Name()))[2]
+						if buildConfig.C.Compiler == "" {
+							cmd = append(cmd, []string{"g++", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".S", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"})
+							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
+						}
+					}
+				}
+				cBuild.Build(cmd, conf.Proj.Output, objects)
+			}
 		} else {
 			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
 			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
@@ -228,6 +266,12 @@ func Do(conf Config) {
 		"build":  doBuild,
 	}
 	if conf.Proj.Extension == "cpp" {
+		buildConfig = conf
+		if len(buildConfig.Proj.Target) != 0 {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Cpp does not support multiple build targets currently.")
+			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "This will be implemented later.")
+			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement this contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
+		}
 	} else if conf.Proj.Extension == "golang" {
 		s := map[string][]string{
 			"android": {"arm"}, "darwin": {"386", "amd64", "arm64"},
