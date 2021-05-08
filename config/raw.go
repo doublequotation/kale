@@ -227,6 +227,7 @@ func buildStep() {
 					}
 				}
 				cBuild.Build(cmd, conf.Proj.Output, objects)
+				os.RemoveAll(home + "/.config/kale")
 			}
 		} else {
 			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
