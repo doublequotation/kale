@@ -1,0 +1,11 @@
+[steps]
+    body = [
+        [
+        "build", 
+        ]
+    ]
+[project]
+    params = []
+    output = "./kale"
+    extension = "cpp"
+    sources = ["./example/*"]

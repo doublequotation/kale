@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	Cmd "kale/commands"
+	cBuild "kale/commands/c"
 	"kale/utils"
 	"os"
 	"regexp"
@@ -29,8 +30,15 @@ type Zap struct {
 	Env     []string
 	Sources []string
 }
+
+type C struct {
+	Linker   string
+	Compiler string
+}
+
 type Config struct {
 	Proj  Project    `toml:"project"`
+	C     C          `toml:"c"`
 	Steps BuildSteps `toml:"steps"`
 	Zap   Zap        `toml:"zap"`
 }
@@ -153,13 +161,7 @@ func buildStep() {
 	} else {
 		var cmd []string = []string{}
 		ext := conf.Proj.Extension
-		if ext != "golang" {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
-			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
-			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "golang")
-			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "cpp (coming soon)")
-			os.Exit(0)
-		} else {
+		if ext == "golang" {
 			ZapStep()
 			params := conf.Proj.Params
 			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
@@ -194,6 +196,44 @@ func buildStep() {
 				cmd = append(cmd, conf.Proj.Sources[0])
 				Cmd.Build(cmd, pairToEnv(), "")
 			}
+		} else if ext == "cpp" {
+			home, _ := os.UserHomeDir()
+			os.Setenv("WORKDIR", home+"/.config/kale")
+			os.MkdirAll(home+"/.config/kale", 0755)
+			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
+				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
+				files, dirErr := os.ReadDir(path)
+				if dirErr != nil {
+					c := utils.InitColors()
+					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), dirErr)
+					os.Exit(0)
+				}
+				conf.Proj.Sources = []string{}
+				var cmd [][]string = [][]string{}
+				if buildConfig.C.Compiler == "" {
+					fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Defaulting to g++")
+				}
+				objects := []string{}
+				for _, dir := range files {
+					if strings.HasSuffix(dir.Name(), "cpp") || strings.HasSuffix(dir.Name(), "cc") {
+						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+						name := (filePather.FindStringSubmatch(dir.Name()))[2]
+						if buildConfig.C.Compiler == "" {
+							cmd = append(cmd, []string{"g++", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".S", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"})
+							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
+						}
+					}
+				}
+				cBuild.Build(cmd, conf.Proj.Output, objects)
+			}
+		} else {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
+			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
+			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "golang")
+			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "cpp")
+			os.Exit(0)
 		}
 	}
 	duration := time.Since(start)
@@ -216,20 +256,7 @@ func contains(s []string, str string) bool {
 }
 
 func Do(conf Config) {
-	s := map[string][]string{
-		"android": {"arm"}, "darwin": {"386", "amd64", "arm64"},
-		"dragonfly": {"amd64"},
-		"freebsd":   {"386", "amd64", "arm"},
-		"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
-		"netbsd":    {"386", "amd64", "arm"},
-		"openbsd":   {"386", "amd64", "arm"},
-		"plan9":     {"386", "amd64"},
-		"solaris":   {"amd64"},
-		"windows":   {"386", "amd64"},
-	}
-	//osList := []string{"android", "linux", "darwin", "dragonfly", "freebsd", "linux", "netbsd", "openbsd", "plan9", "solaris", "windows"}
-	//	archList := []string{"arm", "386", "amd64", "ppc64ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"}
-	buildConfig = conf
+	c := utils.InitColors()
 	m := map[string]fn{
 		"mkdir":  makeDir,
 		"rmdir":  rmDir,
@@ -238,31 +265,51 @@ func Do(conf Config) {
 		"copy":   cpAny,
 		"build":  doBuild,
 	}
-	c := utils.InitColors()
-	for _, pair := range conf.Proj.Target {
-		if len(s[pair[0]]) == 0 {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
-			os.Exit(0)
+	if conf.Proj.Extension == "cpp" {
+		buildConfig = conf
+		if len(buildConfig.Proj.Target) != 0 {
+			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Cpp does not support multiple build targets currently.")
+			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "This will be implemented later.")
+			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement this contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
 		}
-		validPairs = append(validPairs, []string{pair[0]})
-		if len(pair[1:]) > 1 {
-			for i, target := range pair[1:] {
-				if contains(s[pair[0]], target) == false {
-					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
-					os.Exit(0)
-				}
-				if i == 0 {
-					validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
-				} else {
-					validPairs = append(validPairs, []string{pair[0], target})
-				}
-			}
-		} else {
-			if contains(s[pair[0]], pair[1]) == false {
-				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
+	} else if conf.Proj.Extension == "golang" {
+		s := map[string][]string{
+			"android": {"arm"}, "darwin": {"386", "amd64", "arm64"},
+			"dragonfly": {"amd64"},
+			"freebsd":   {"386", "amd64", "arm"},
+			"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
+			"netbsd":    {"386", "amd64", "arm"},
+			"openbsd":   {"386", "amd64", "arm"},
+			"plan9":     {"386", "amd64"},
+			"solaris":   {"amd64"},
+			"windows":   {"386", "amd64"},
+		}
+		buildConfig = conf
+		for _, pair := range conf.Proj.Target {
+			if len(s[pair[0]]) == 0 {
+				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
 				os.Exit(0)
 			}
-			validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
+			validPairs = append(validPairs, []string{pair[0]})
+			if len(pair[1:]) > 1 {
+				for i, target := range pair[1:] {
+					if contains(s[pair[0]], target) == false {
+						fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
+						os.Exit(0)
+					}
+					if i == 0 {
+						validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+					} else {
+						validPairs = append(validPairs, []string{pair[0], target})
+					}
+				}
+			} else {
+				if contains(s[pair[0]], pair[1]) == false {
+					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
+					os.Exit(0)
+				}
+				validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
+			}
 		}
 	}
 	if len(conf.Steps.Body) != 0 {
