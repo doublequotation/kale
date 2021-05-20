@@ -32,7 +32,8 @@ func main() {
 	// Create new parser object
 	parser := argparse.NewParser("kale", "A build system")
 	buildCmd := parser.NewCommand("build", "Will start building workspace")
-
+	helpCmd := parser.NewCommand("doc", "Shows help information about specific topics")
+	docSupportCmd := helpCmd.NewCommand("support", "Shows list of supported languages")
 	// Parse input
 	argErr := parser.Parse(os.Args)
 	if argErr != nil {
@@ -42,7 +43,11 @@ func main() {
 		os.Exit(0)
 	}
 	content := ""
-	if buildCmd.Happened() {
+	if docSupportCmd.Happened() {
+		fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Languages supported")
+		fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "golang")
+		fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "cpp/c")
+	} else if buildCmd.Happened() {
 		walkErr := filepath.Walk(".", func(path string, info os.FileInfo, wErr error) error {
 			if wErr == nil && info.Name() == ".KALE" {
 				p, absErr := filepath.Abs(path)
