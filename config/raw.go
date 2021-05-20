@@ -3,12 +3,14 @@ package config
 import (
 	"fmt"
 	Cmd "kale/commands"
-	cBuild "kale/commands/c"
 	"kale/utils"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	cBuild "kale/commands/c"
+	cppBuild "kale/commands/cpp"
 
 	"github.com/BurntSushi/toml"
 	"github.com/muesli/termenv"
@@ -196,7 +198,7 @@ func buildStep() {
 				cmd = append(cmd, conf.Proj.Sources[0])
 				Cmd.Build(cmd, pairToEnv(), "")
 			}
-		} else if ext == "cpp" {
+		} else if ext == "cpp" || ext == "c" {
 			home, _ := os.UserHomeDir()
 			os.Setenv("WORKDIR", home+"/.config/kale")
 			os.MkdirAll(home+"/.config/kale", 0755)
@@ -205,13 +207,13 @@ func buildStep() {
 				files, dirErr := os.ReadDir(path)
 				if dirErr != nil {
 					c := utils.InitColors()
-					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), dirErr)
+					fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), dirErr)
 					os.Exit(0)
 				}
 				conf.Proj.Sources = []string{}
 				var cmd [][]string = [][]string{}
 				if buildConfig.C.Compiler == "" {
-					fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Defaulting to g++")
+					fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Defaulting to g++/gcc")
 				}
 				objects := []string{}
 				for _, dir := range files {
@@ -224,16 +226,29 @@ func buildStep() {
 							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"})
 							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 						}
+					} else if strings.HasSuffix(dir.Name(), "c") {
+						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+						name := (filePather.FindStringSubmatch(dir.Name()))[2]
+						if buildConfig.C.Compiler == "" {
+							cmd = append(cmd, []string{"gcc", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".s", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"})
+							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".s"})
+							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
+						}
 					}
 				}
-				cBuild.Build(cmd, conf.Proj.Output, objects)
-				os.RemoveAll(home + "/.config/kale")
+				if ext == "cpp" {
+					cppBuild.CppBuild(cmd, conf.Proj.Output, objects)
+				} else {
+					cBuild.CBuild(cmd, conf.Proj.Output, objects)
+				}
+				//os.RemoveAll(home + "/.config/kale")
 			}
 		} else {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Uknown extension "+ext)
-			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
-			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "golang")
-			fmt.Println(termenv.String("\t- ").Foreground(c.Cyan).Bold(), "cpp")
+			fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Uknown extension "+ext)
+			fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Make sure it is a supported extension:")
+			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "golang")
+			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "cpp/c")
 			os.Exit(0)
 		}
 	}
@@ -241,7 +256,7 @@ func buildStep() {
 	for _, path := range conf.Zap.Sources {
 		Cmd.Transfer(path)
 	}
-	fmt.Println(termenv.String("Time: ").Foreground(c.Cyan), duration.Seconds())
+	fmt.Println(termenv.String("Time:").Foreground(c.Cyan), duration.Seconds())
 }
 func doBuild(_ []string) {
 	buildStep()
@@ -266,12 +281,12 @@ func Do(conf Config) {
 		"copy":   cpAny,
 		"build":  doBuild,
 	}
+	buildConfig = conf
 	if conf.Proj.Extension == "cpp" {
-		buildConfig = conf
 		if len(buildConfig.Proj.Target) != 0 {
-			fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Cpp does not support multiple build targets currently.")
-			fmt.Println(termenv.String("Info: ").Foreground(c.Cyan).Bold(), "This will be implemented later.")
-			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement this contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
+			fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Cpp does not support multiple build targets currently.")
+			fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "This will be implemented later.")
+			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement a feature, contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
 		}
 	} else if conf.Proj.Extension == "golang" {
 		s := map[string][]string{
@@ -285,17 +300,16 @@ func Do(conf Config) {
 			"solaris":   {"amd64"},
 			"windows":   {"386", "amd64"},
 		}
-		buildConfig = conf
 		for _, pair := range conf.Proj.Target {
 			if len(s[pair[0]]) == 0 {
-				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
+				fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
 				os.Exit(0)
 			}
 			validPairs = append(validPairs, []string{pair[0]})
 			if len(pair[1:]) > 1 {
 				for i, target := range pair[1:] {
 					if contains(s[pair[0]], target) == false {
-						fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
+						fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
 						os.Exit(0)
 					}
 					if i == 0 {
@@ -306,7 +320,7 @@ func Do(conf Config) {
 				}
 			} else {
 				if contains(s[pair[0]], pair[1]) == false {
-					fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
+					fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
 					os.Exit(0)
 				}
 				validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
@@ -318,7 +332,7 @@ func Do(conf Config) {
 			//if len(set) > 1 {
 			operands := set[1:]
 			if m[set[0]] == nil {
-				fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
+				fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
 				os.Exit(0)
 			}
 			m[set[0]](operands)

@@ -1,4 +1,4 @@
-package cBuild
+package cppBuild
 
 import (
 	"bufio"
@@ -16,7 +16,7 @@ func Command(cmd []string, verb string) {
 	stderr, err := command.StderrPipe()
 
 	if err != nil {
-		fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), err)
+		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
 		os.Exit(1)
 	}
 
@@ -24,20 +24,20 @@ func Command(cmd []string, verb string) {
 
 	scanner := bufio.NewScanner(stderr)
 	if scanner.Scan() == true {
-		fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), verb+" error(s):")
-		fmt.Println(termenv.String("-").Foreground(c.Red).Bold(), scanner.Text())
+		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), verb+" error(s):")
+		fmt.Println(termenv.String("- ").Foreground(c.Red).Bold(), scanner.Text())
 		for scanner.Scan() {
-			fmt.Println(termenv.String("-").Foreground(c.Red).Bold(), scanner.Text())
+			fmt.Println(termenv.String("- ").Foreground(c.Red).Bold(), scanner.Text())
 		}
 	}
 	command.Wait()
 }
-func CBuild(steps [][]string, out string, objects []string) {
+func CppBuild(steps [][]string, out string, objects []string) {
 	for _, cmd := range steps {
 		Command(cmd, "Building")
 	}
 
-	cmd := []string{"gcc"}
+	cmd := []string{"g++"}
 	cmd = append(cmd, "-o", out)
 	cmd = append(cmd, objects...)
 	Command(cmd, "Compiling")
