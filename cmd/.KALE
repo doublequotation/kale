@@ -1,0 +1,12 @@
+[steps]
+    body = [
+        [
+        "build", 
+        ],
+    ]
+[project]
+    params = []
+    output = "./bin/kale"
+    extension = "golang"
+    sources = ["./main.go"]
+    # target = [["linux", "amd64"], ["darwin",  "arm64"]]

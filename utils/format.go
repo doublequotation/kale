@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/muesli/termenv"
 )
 
@@ -29,4 +31,12 @@ func InitColors() Colors {
 func DelLine() {
 	termenv.CursorPrevLine(1)
 	termenv.ClearLine()
+}
+
+func FPrint(header termenv.Color, any ...interface{}) {
+	fmt.Print(termenv.String(any[0].(string) + ": ").Foreground(header).Bold())
+	for _, data := range any[1:] {
+		fmt.Print(data)
+	}
+	fmt.Println()
 }

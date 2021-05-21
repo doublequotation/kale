@@ -284,8 +284,8 @@ func Do(conf Config) {
 	buildConfig = conf
 	if conf.Proj.Extension == "cpp" {
 		if len(buildConfig.Proj.Target) != 0 {
-			fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Cpp does not support multiple build targets currently.")
-			fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "This will be implemented later.")
+			utils.FPrint(c.Red, "Error", "Cpp does not support multiple build targets currently.")
+			utils.FPrint(c.Cyan, "Info", "This will be implemented later.")
 			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement a feature, contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
 		}
 	} else if conf.Proj.Extension == "golang" {
@@ -302,14 +302,14 @@ func Do(conf Config) {
 		}
 		for _, pair := range conf.Proj.Target {
 			if len(s[pair[0]]) == 0 {
-				fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Could not find build target operating system: "+pair[0])
+				utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
 				os.Exit(0)
 			}
 			validPairs = append(validPairs, []string{pair[0]})
 			if len(pair[1:]) > 1 {
 				for i, target := range pair[1:] {
 					if contains(s[pair[0]], target) == false {
-						fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+target)
+						utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
 						os.Exit(0)
 					}
 					if i == 0 {
@@ -320,7 +320,7 @@ func Do(conf Config) {
 				}
 			} else {
 				if contains(s[pair[0]], pair[1]) == false {
-					fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), pair[0]+" does not have architecure: "+pair[1])
+					utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
 					os.Exit(0)
 				}
 				validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
@@ -332,7 +332,7 @@ func Do(conf Config) {
 			//if len(set) > 1 {
 			operands := set[1:]
 			if m[set[0]] == nil {
-				fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Request "+set[0]+" does not exist.")
+				utils.FPrint(c.Red, "Error", "Request "+set[0]+" does not exist.")
 				os.Exit(0)
 			}
 			m[set[0]](operands)

@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-
-	"github.com/muesli/termenv"
 )
 
 var path string
@@ -19,11 +17,11 @@ type valid struct {
 	Value string
 }
 
-func Err(err string) {
-	c := utils.InitColors()
-	fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
-	os.Exit(0)
-}
+//func Err(err string) {
+//c := utils.InitColors()
+//fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
+//os.Exit(0)
+//}
 
 func Transfer(path string) {
 	rm := exec.Command("rm", path)
@@ -37,6 +35,7 @@ func Transfer(path string) {
 }
 
 func Zap(evs []string, name string) {
+	c := utils.InitColors()
 	var aval []valid
 	for _, v := range evs {
 		tv := strings.Split(v, "=")
@@ -46,11 +45,11 @@ func Zap(evs []string, name string) {
 	// f, _ := os.OpenFile(flag.Param, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	contentB, err := ioutil.ReadFile(name)
 	if err != nil {
-		Err(err.Error())
+		utils.FPrint(c.Red, "Error", err.Error())
 	}
 	er := ioutil.WriteFile(name+".copy", []byte(contentB), 0644)
 	if er != nil {
-		Err(er.Error())
+		utils.FPrint(c.Red, "Error", er.Error())
 	}
 	path = name
 	content := string(contentB)
