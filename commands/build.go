@@ -11,7 +11,7 @@ type Builder struct {
 	Pid      int
 }
 
-func (c *Builder) AddSteps(body ...string) {
+func (c *Builder) AddArgs(body ...string) {
 	for _, p := range body {
 		c.Args = append(c.Args, p)
 	}
@@ -24,11 +24,11 @@ func (c *Builder) AddTarget(body ...string) {
 }
 
 func (c *Builder) Construct() {
-	c.AddSteps("-o", c.Output)
+	c.AddArgs("-o", c.Output)
 	cmd := []string{c.Cmd}
 	cmd = append(cmd, c.Args...)
 	for _, target := range c.Target {
-		c.AddSteps(target)
+		c.AddArgs(target)
 	}
 
 	c.Pid = utils.Command(cmd, c.ProcName)

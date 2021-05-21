@@ -9,7 +9,7 @@ import (
 	"github.com/muesli/termenv"
 )
 
-func Command(cmd []string, verb string) {
+func Command(cmd []string, verb string) int {
 	command := exec.Command(cmd[0], cmd[1:]...)
 	c := InitColors()
 	stderr, err := command.StderrPipe()
@@ -30,4 +30,5 @@ func Command(cmd []string, verb string) {
 		}
 	}
 	command.Wait()
+	return command.Process.Pid
 }

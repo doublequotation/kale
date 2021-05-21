@@ -16,8 +16,8 @@ func (c *C) CBuild() {
 		cmd.Construct()
 	}
 
-	cmd := command.Builder{Cmd: "gcc"}
-	cmd.AddSteps(c.Args...)
+	cmd := command.Builder{Cmd: "gcc", Output: c.Out}
+	cmd.AddArgs(c.Args...)
 	cmd.AddTarget(c.Objects...)
 	cmd.Construct()
 }

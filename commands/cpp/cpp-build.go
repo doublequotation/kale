@@ -1,15 +1,23 @@
 package cppBuild
 
-import "kale/utils"
+import (
+	command "kale/commands"
+)
 
-func CppBuild(steps [][]string, out string, objects []string, args []string) {
-	for _, cmd := range steps {
-		utils.Command(cmd, "Building")
+type CPP struct {
+	Steps   []command.Builder
+	Out     string
+	Objects []string
+	Args    []string
+}
+
+func (cpp *CPP) CppBuild() {
+	for _, cmd := range cpp.Steps {
+		cmd.Construct()
 	}
 
-	cmd := []string{"g++"}
-	cmd = append(cmd, args...)
-	cmd = append(cmd, "-o", out)
-	cmd = append(cmd, objects...)
-	utils.Command(cmd, "Compiling")
+	cmd := command.Builder{Cmd: "g++", Output: cpp.Out}
+	cmd.AddArgs(cpp.Args...)
+	cmd.AddTarget(cpp.Objects...)
+	cmd.Construct()
 }

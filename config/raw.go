@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	Cmd "kale/commands"
+	command "kale/commands"
 	"kale/utils"
 	"os"
 	"regexp"
@@ -211,7 +212,7 @@ func buildStep() {
 					os.Exit(0)
 				}
 				conf.Proj.Sources = []string{}
-				var cmd [][]string = [][]string{}
+				var cmd []command.Builder = []command.Builder{}
 				if buildConfig.C.Compiler == "" {
 					fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Defaulting to g++/gcc")
 				}
@@ -221,18 +222,44 @@ func buildStep() {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
 						if buildConfig.C.Compiler == "" {
-							cmd = append(cmd, []string{"g++", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
-							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".S", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
-							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"}, conf.Proj.Params)
+							pre := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
+							pre.AddArgs("-E")
+							pre.AddArgs(conf.Proj.Params...)
+							pre.AddTarget(path + "/" + dir.Name())
+
+							asm := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".S", Target: []string{path + "/" + dir.Name()}}
+							asm.AddArgs("-S")
+							asm.AddArgs(conf.Proj.Params...)
+							asm.AddTarget(path + "/" + dir.Name())
+
+							obj := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
+							obj.AddArgs("-c")
+							obj.AddArgs(conf.Proj.Params...)
+							obj.AddTarget(path + "/" + dir.Name())
+
 							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 						}
 					} else if strings.HasSuffix(dir.Name(), "c") {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
 						if buildConfig.C.Compiler == "" {
-							cmd = append(cmd, []string{"gcc", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
-							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".s", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
-							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".s"}, conf.Proj.Params)
+							pre := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
+							pre.AddArgs("-E")
+							pre.AddArgs(conf.Proj.Params...)
+							pre.AddTarget(path + "/" + dir.Name())
+
+							asm := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".s", Target: []string{path + "/" + dir.Name()}}
+							asm.AddArgs("-S")
+							asm.AddArgs(conf.Proj.Params...)
+							asm.AddTarget(path + "/" + dir.Name())
+
+							obj := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
+							obj.AddArgs("-c")
+							obj.AddArgs(conf.Proj.Params...)
+							obj.AddTarget(path + "/" + dir.Name())
+
+							cmd = append(cmd, pre, asm, obj)
+
 							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 						}
 					}
@@ -240,7 +267,9 @@ func buildStep() {
 				if ext == "cpp" {
 					cppBuild.CppBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
 				} else {
-					cBuild.CBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
+					builder := cBuild.C{Args: conf.Proj.Params, Steps: cmd, Objects: objects, Out: conf.Proj.Output}
+					builder.CBuild()
+					//cBuild.CBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
 				}
 				os.RemoveAll(home + "/.config/kale")
 			}
