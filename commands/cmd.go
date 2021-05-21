@@ -16,28 +16,46 @@ func indexOf(element string, data []string) int {
 	}
 	return -1 //not found.
 }
-func Build(params []string, pre []string, output string) {
+
+type GO struct {
+	Platforms []string
+	Params    []string
+	Target    []string
+	Out       string
+}
+
+func (g *GO) Build() {
 	c := utils.InitColors()
-	if len(pre) != 0 {
-		for _, str := range pre {
-			outName := params[indexOf("-o", params)+1]
-			params[indexOf("-o", params)+1] = outName
-			// params := strings.Join(params, " ")
-			nStr := strings.Split(str, " ")
-			//if _, err := os.Mkdir(strings.Split(nStr[1], "=")[1], 0755); os.IsNotExist(err) == true {
-			//}
-			params[indexOf("-o", params)+1] = output + strings.Split(nStr[1], "=")[1] + "/" + params[indexOf("-o", params)+1] + "-" + strings.Split(nStr[2], "=")[1]
-			nStr = append(nStr, params...)
-			utils.Command(nStr, "Building")
-			utils.FPrint(c.Green, "Compiled", params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- OS:").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- ARCHITECTURE:").Foreground(c.Cyan).Bold(), params[indexOf("-o", params)+1])
-			fmt.Println(termenv.String("\t- PARAMS:").Foreground(c.Cyan).Bold(), strings.Join(params[1:], " "))
-			params[indexOf("-o", params)+1] = outName
+	if len(g.Platforms) != 0 {
+		for _, str := range g.Platforms {
+			outName := g.Out
+			g.Out = outName
+
+			platDouble := strings.Split(str, " ")
+			os := strings.Split(platDouble[0], "=")[1]
+			arch := strings.Split(platDouble[0], "=")[1]
+
+			//filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
+			//name := (filePather.FindStringSubmatch(g.Out))[2]
+			g.Out = g.Out + "/" + os + "/" + "kale-" + arch
+
+			build := Builder{ProcName: "Building", Output: g.Out, Cmd: "go", Env: platDouble}
+			build.AddArgs("build")
+			build.AddArgs(g.Params...)
+			build.AddTarget(g.Target...)
+			build.Construct()
+
+			utils.FPrint(c.Green, "Compiled", g.Out)
+			fmt.Println(termenv.String("\t- OS:").Foreground(c.Cyan).Bold(), g.Out)
+			fmt.Println(termenv.String("\t- ARCHITECTURE:").Foreground(c.Cyan).Bold(), g.Out)
+			fmt.Println(termenv.String("\t- PARAMS:").Foreground(c.Cyan).Bold(), strings.Join(g.Params, " "))
+			g.Out = outName
 		}
 	} else {
-		params[indexOf("-o", params)+1] = output + params[indexOf("-o", params)+1]
-		utils.Command(params, "Building")
-		utils.FPrint(c.Green, "Compiled", params[indexOf("-o", params)+1])
+		build := Builder{ProcName: "Building", Output: g.Out, Cmd: "go"}
+		build.AddArgs("build")
+		build.AddTarget(g.Target...)
+		build.Construct()
+		utils.FPrint(c.Green, "Compiled", g.Out)
 	}
 }

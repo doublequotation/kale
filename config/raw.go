@@ -126,7 +126,7 @@ var validPairs [][]string = [][]string{}
 func pairToEnv() []string {
 	pgroup := []string{}
 	for _, p := range validPairs {
-		pgroup = append(pgroup, "env GOOS="+p[0]+" GOARCH="+p[1])
+		pgroup = append(pgroup, "GOOS="+p[0]+" GOARCH="+p[1])
 	}
 	return pgroup
 }
@@ -162,12 +162,11 @@ func buildStep() {
 		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), "Missing sources data, extension data, or output data in .KALE file. ")
 		os.Exit(0)
 	} else {
-		var cmd []string = []string{}
 		ext := conf.Proj.Extension
 		if ext == "golang" {
 			ZapStep()
 			params := conf.Proj.Params
-			cmd = append(cmd, "go", "build", "-o", conf.Proj.Output)
+			cmd := command.GO{}
 			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
 				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
 				files, dirErr := os.ReadDir(path)
@@ -180,24 +179,28 @@ func buildStep() {
 				for _, dir := range files {
 					if strings.HasSuffix(dir.Name(), ".go") {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
-						cmd[3] = (filePather.FindStringSubmatch(dir.Name()))[2]
-						newList := append(cmd, params...)
-						newList = append(cmd, dir.Name())
-						Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
+						cmd.Out = (filePather.FindStringSubmatch(dir.Name()))[2]
+						cmd.Params = append(cmd.Params, params...)
+						cmd.Target = append(cmd.Target, dir.Name())
+						cmd.Platforms = pairToEnv()
+						cmd.Build()
 						conf.Proj.Sources = append(conf.Proj.Sources, conf.Proj.Output)
 					}
 				}
 			} else if len(conf.Proj.Sources) > 1 {
 				for _, file := range conf.Proj.Sources {
 					filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
-					cmd[3] = (filePather.FindStringSubmatch(file))[2]
-					newList := append(cmd, params...)
-					newList = append(cmd, file)
-					Cmd.Build(newList, pairToEnv(), conf.Proj.Output)
+					cmd.Out = (filePather.FindStringSubmatch(file))[2]
+					cmd.Params = append(cmd.Params, params...)
+					cmd.Target = append(cmd.Target, file)
+					cmd.Platforms = pairToEnv()
+					cmd.Build()
 				}
 			} else {
-				cmd = append(cmd, conf.Proj.Sources[0])
-				Cmd.Build(cmd, pairToEnv(), "")
+				cmd.Target = append(cmd.Target, conf.Proj.Sources[0])
+				cmd.Platforms = pairToEnv()
+				cmd.Out = conf.Proj.Output
+				cmd.Build()
 			}
 		} else if ext == "cpp" || ext == "c" {
 			home, _ := os.UserHomeDir()
@@ -265,7 +268,8 @@ func buildStep() {
 					}
 				}
 				if ext == "cpp" {
-					cppBuild.CppBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
+					builder := cppBuild.CPP{Args: conf.Proj.Params, Steps: cmd, Objects: objects, Out: conf.Proj.Output}
+					builder.CppBuild()
 				} else {
 					builder := cBuild.C{Args: conf.Proj.Params, Steps: cmd, Objects: objects, Out: conf.Proj.Output}
 					builder.CBuild()
