@@ -1,15 +1,23 @@
 package cBuild
 
-import "kale/utils"
+import (
+	command "kale/commands"
+)
 
-func CBuild(steps [][]string, out string, objects []string, args []string) {
-	for _, cmd := range steps {
-		utils.Command(cmd, "Building")
+type C struct {
+	Steps   []command.Builder
+	Out     string
+	Objects []string
+	Args    []string
+}
+
+func (c *C) CBuild() {
+	for _, cmd := range c.Steps {
+		cmd.Construct()
 	}
 
-	cmd := []string{"gcc"}
-	cmd = append(cmd, args...)
-	cmd = append(cmd, "-o", out)
-	cmd = append(cmd, objects...)
-	utils.Command(cmd, "Compiling")
+	cmd := command.Builder{Cmd: "gcc"}
+	cmd.AddSteps(c.Args...)
+	cmd.AddTarget(c.Objects...)
+	cmd.Construct()
 }
