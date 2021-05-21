@@ -1,7 +1,8 @@
-package command
+package goBuild
 
 import (
 	"fmt"
+	command "kale/commands"
 	"kale/utils"
 	"strings"
 
@@ -39,7 +40,7 @@ func (g *GO) Build() {
 			//name := (filePather.FindStringSubmatch(g.Out))[2]
 			g.Out = g.Out + "/" + os + "/" + "kale-" + arch
 
-			build := Builder{ProcName: "Building", Output: g.Out, Cmd: "go", Env: platDouble}
+			build := command.Builder{ProcName: "Building", Output: g.Out, Cmd: "go", Env: platDouble}
 			build.AddArgs("build")
 			build.AddArgs(g.Params...)
 			build.AddTarget(g.Target...)
@@ -52,7 +53,7 @@ func (g *GO) Build() {
 			g.Out = outName
 		}
 	} else {
-		build := Builder{ProcName: "Building", Output: g.Out, Cmd: "go"}
+		build := command.Builder{ProcName: "Building", Output: g.Out, Cmd: "go"}
 		build.AddArgs("build")
 		build.AddTarget(g.Target...)
 		build.Construct()

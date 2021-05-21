@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	Cmd "kale/commands"
 	command "kale/commands"
 	"kale/utils"
 	"os"
@@ -12,6 +11,8 @@ import (
 
 	cBuild "kale/commands/c"
 	cppBuild "kale/commands/cpp"
+	goBuild "kale/commands/golang"
+	zapBuild "kale/commands/zap"
 
 	"github.com/BurntSushi/toml"
 	"github.com/muesli/termenv"
@@ -85,8 +86,7 @@ func ZapStep() {
 	}
 
 	for _, name := range conf.Zap.Sources {
-
-		Cmd.Zap(listing, name)
+		zapBuild.Zap(listing, name)
 	}
 }
 func buildStep() {
@@ -102,7 +102,7 @@ func buildStep() {
 		if ext == "golang" {
 			ZapStep()
 			params := conf.Proj.Params
-			cmd := command.GO{}
+			cmd := goBuild.GO{}
 			if strings.HasSuffix(conf.Proj.Sources[0], "/*") {
 				path := strings.Replace(conf.Proj.Sources[0], "/*", "", 1)
 				files, dirErr := os.ReadDir(path)
@@ -223,7 +223,7 @@ func buildStep() {
 	}
 	duration := time.Since(start)
 	for _, path := range conf.Zap.Sources {
-		Cmd.Transfer(path)
+		zapBuild.Transfer(path)
 	}
 	fmt.Println(termenv.String("Time:").Foreground(c.Cyan), duration.Seconds())
 }
