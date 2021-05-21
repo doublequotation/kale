@@ -32,12 +32,13 @@ func Command(cmd []string, verb string) {
 	}
 	command.Wait()
 }
-func CppBuild(steps [][]string, out string, objects []string) {
+func CppBuild(steps [][]string, out string, objects []string, args []string) {
 	for _, cmd := range steps {
 		Command(cmd, "Building")
 	}
 
 	cmd := []string{"g++"}
+	cmd = append(cmd, args...)
 	cmd = append(cmd, "-o", out)
 	cmd = append(cmd, objects...)
 	Command(cmd, "Compiling")

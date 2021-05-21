@@ -221,28 +221,28 @@ func buildStep() {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
 						if buildConfig.C.Compiler == "" {
-							cmd = append(cmd, []string{"g++", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"})
-							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".S", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"})
-							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"})
+							cmd = append(cmd, []string{"g++", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".S", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
+							cmd = append(cmd, []string{"g++", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".S"}, conf.Proj.Params)
 							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 						}
 					} else if strings.HasSuffix(dir.Name(), "c") {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
 						if buildConfig.C.Compiler == "" {
-							cmd = append(cmd, []string{"gcc", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"})
-							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".s", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"})
-							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".s"})
+							cmd = append(cmd, []string{"gcc", "-E", path + "/" + dir.Name(), "-o", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
+							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".s", "-S", os.Getenv("WORKDIR") + "/" + name + ".i"}, conf.Proj.Params)
+							cmd = append(cmd, []string{"gcc", "-o", os.Getenv("WORKDIR") + "/" + name + ".o", "-c", os.Getenv("WORKDIR") + "/" + name + ".s"}, conf.Proj.Params)
 							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 						}
 					}
 				}
 				if ext == "cpp" {
-					cppBuild.CppBuild(cmd, conf.Proj.Output, objects)
+					cppBuild.CppBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
 				} else {
-					cBuild.CBuild(cmd, conf.Proj.Output, objects)
+					cBuild.CBuild(cmd, conf.Proj.Output, objects, conf.Proj.Params)
 				}
-				//os.RemoveAll(home + "/.config/kale")
+				os.RemoveAll(home + "/.config/kale")
 			}
 		} else {
 			fmt.Println(termenv.String("Error:").Foreground(c.Red).Bold(), "Uknown extension "+ext)
