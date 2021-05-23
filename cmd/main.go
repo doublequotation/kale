@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"kale/config"
+	"kale/kl"
 	"kale/utils"
 	"os"
 	"path/filepath"
@@ -44,6 +45,10 @@ func main() {
 		os.Exit(0)
 	}
 	content := ""
+
+	root, _ := filepath.Abs(".")
+	outFile := kl.Collect(root)
+	kl.Run(outFile)
 	if docSupportCmd.Happened() {
 		fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Languages supported")
 		fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "golang")
