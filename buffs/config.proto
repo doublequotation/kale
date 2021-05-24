@@ -1,0 +1,30 @@
+syntax = "proto3";
+option go_package = "./config";
+
+package config;
+
+/*
+
+user -> (targets[cpu, os], etc...) -> {
+
+}
+
+*/
+
+message Target {
+  optional string name = 1;
+  repeated string tuples = 2;
+}
+
+message Output {
+  optional string name = 1;
+  optional int32 ref_id = 2;
+  repeated string output = 3;
+  repeated string srcs = 4;
+  repeated Target targets = 5;
+}
+
+message Main {
+  repeated Output outs = 1;
+  repeated Target platforms = 2;
+}
