@@ -14,19 +14,15 @@ import (
 	goBuild "kale/commands/golang"
 	zapBuild "kale/commands/zap"
 
-	"github.com/BurntSushi/toml"
 	"github.com/muesli/termenv"
 )
 
 type fn func([]string)
-type BuildSteps struct {
-	Body [][]string
-}
 
 type Project struct {
 	Output    string
-	Sources   []string
 	Extension string
+	Sources   []string
 	Params    []string
 	Target    [][]string
 }
@@ -35,26 +31,13 @@ type Zap struct {
 	Sources []string
 }
 
-type C struct {
-	Linker   string
-	Compiler string
-}
-
 type Config struct {
-	Proj  Project    `toml:"project"`
-	C     C          `toml:"c"`
-	Steps BuildSteps `toml:"steps"`
-	Zap   Zap        `toml:"zap"`
+	Proj Project
+	Zap  Zap
 }
 
-func Read(content string) Config {
-	var Conf Config
-	if _, err := toml.Decode(content, &Conf); err != nil {
-		c := utils.InitColors()
-		fmt.Println(termenv.String("Error: ").Foreground(c.Red).Bold(), err)
-		os.Exit(0)
-	}
-	return Conf
+func TupleToDouble(Tuple string) []string {
+	return strings.Split(Tuple, "-unknown-")
 }
 
 var buildConfig Config
@@ -152,55 +135,51 @@ func buildStep() {
 				}
 				conf.Proj.Sources = []string{}
 				var cmd []command.Builder = []command.Builder{}
-				if buildConfig.C.Compiler == "" {
-					fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Defaulting to g++/gcc")
-				}
+				//if buildConfig.C.Compiler == "" {
+				//fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Defaulting to g++/gcc")
+				//}
 				objects := []string{}
 				for _, dir := range files {
 					if strings.HasSuffix(dir.Name(), "cpp") || strings.HasSuffix(dir.Name(), "cc") {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
-						if buildConfig.C.Compiler == "" {
-							pre := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
-							pre.AddArgs("-E")
-							pre.AddArgs(conf.Proj.Params...)
-							pre.AddTarget(path + "/" + dir.Name())
+						pre := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
+						pre.AddArgs("-E")
+						pre.AddArgs(conf.Proj.Params...)
+						pre.AddTarget(path + "/" + dir.Name())
 
-							asm := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".S", Target: []string{path + "/" + dir.Name()}}
-							asm.AddArgs("-S")
-							asm.AddArgs(conf.Proj.Params...)
-							asm.AddTarget(path + "/" + dir.Name())
+						asm := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".S", Target: []string{path + "/" + dir.Name()}}
+						asm.AddArgs("-S")
+						asm.AddArgs(conf.Proj.Params...)
+						asm.AddTarget(path + "/" + dir.Name())
 
-							obj := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
-							obj.AddArgs("-c")
-							obj.AddArgs(conf.Proj.Params...)
-							obj.AddTarget(path + "/" + dir.Name())
+						obj := command.Builder{Cmd: "g++", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
+						obj.AddArgs("-c")
+						obj.AddArgs(conf.Proj.Params...)
+						obj.AddTarget(path + "/" + dir.Name())
 
-							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
-						}
+						objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 					} else if strings.HasSuffix(dir.Name(), "c") {
 						filePather := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 						name := (filePather.FindStringSubmatch(dir.Name()))[2]
-						if buildConfig.C.Compiler == "" {
-							pre := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
-							pre.AddArgs("-E")
-							pre.AddArgs(conf.Proj.Params...)
-							pre.AddTarget(path + "/" + dir.Name())
+						pre := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".i", Target: []string{path + "/" + dir.Name()}}
+						pre.AddArgs("-E")
+						pre.AddArgs(conf.Proj.Params...)
+						pre.AddTarget(path + "/" + dir.Name())
 
-							asm := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".s", Target: []string{path + "/" + dir.Name()}}
-							asm.AddArgs("-S")
-							asm.AddArgs(conf.Proj.Params...)
-							asm.AddTarget(path + "/" + dir.Name())
+						asm := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".s", Target: []string{path + "/" + dir.Name()}}
+						asm.AddArgs("-S")
+						asm.AddArgs(conf.Proj.Params...)
+						asm.AddTarget(path + "/" + dir.Name())
 
-							obj := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
-							obj.AddArgs("-c")
-							obj.AddArgs(conf.Proj.Params...)
-							obj.AddTarget(path + "/" + dir.Name())
+						obj := command.Builder{Cmd: "gcc", Output: os.Getenv("WORKDIR") + "/" + name + ".o", Target: []string{path + "/" + dir.Name()}}
+						obj.AddArgs("-c")
+						obj.AddArgs(conf.Proj.Params...)
+						obj.AddTarget(path + "/" + dir.Name())
 
-							cmd = append(cmd, pre, asm, obj)
+						cmd = append(cmd, pre, asm, obj)
 
-							objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
-						}
+						objects = append(objects, os.Getenv("WORKDIR")+"/"+name+".o")
 					}
 				}
 				if ext == "cpp" {
@@ -240,72 +219,75 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func Do(conf Config) {
+func Do(Conf *Main) {
 	c := utils.InitColors()
-	methods := map[string]fn{
-		"mkdir":  makeDir,
-		"rmdir":  rmDir,
-		"rmfile": rmFile,
-		"mvfile": mvFile,
-		"copy":   cpAny,
-		"build":  doBuild,
-	}
-	buildConfig = conf
-	if conf.Proj.Extension == "cpp" {
-		if len(buildConfig.Proj.Target) != 0 {
-			utils.FPrint(c.Red, "Error", "Cpp does not support multiple build targets currently.")
-			utils.FPrint(c.Cyan, "Info", "This will be implemented later.")
-			fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement a feature, contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
-		}
-	} else if conf.Proj.Extension == "golang" {
-		s := map[string][]string{
-			"android": {"arm"}, "darwin": {"386", "amd64", "arm64"},
-			"dragonfly": {"amd64"},
-			"freebsd":   {"386", "amd64", "arm"},
-			"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
-			"netbsd":    {"386", "amd64", "arm"},
-			"openbsd":   {"386", "amd64", "arm"},
-			"plan9":     {"386", "amd64"},
-			"solaris":   {"amd64"},
-			"windows":   {"386", "amd64"},
-		}
-		for _, pair := range conf.Proj.Target {
-			if len(s[pair[0]]) == 0 {
-				utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
-				os.Exit(0)
+	//	methods := map[string]fn{
+	//		"mkdir":  makeDir,
+	//		"rmdir":  rmDir,
+	//		"rmfile": rmFile,
+	//		"mvfile": mvFile,
+	//		"copy":   cpAny,
+	//		"build":  doBuild,
+	//	}
+	for _, conf := range Conf.Outs {
+		if conf.Extension.String() == "cpp" {
+			if len(buildConfig.Proj.Target) != 0 {
+				utils.FPrint(c.Red, "Error", "Cpp does not support multiple build targets currently.")
+				utils.FPrint(c.Cyan, "Info", "This will be implemented later.")
+				fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement a feature, contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
 			}
-			validPairs = append(validPairs, []string{pair[0]})
-			if len(pair[1:]) > 1 {
-				for i, target := range pair[1:] {
-					if contains(s[pair[0]], target) == false {
-						utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
+		} else if conf.Extension.String() == "golang" {
+			s := map[string][]string{
+				"android":   {"arm"},
+				"darwin":    {"386", "amd64", "arm64"},
+				"dragonfly": {"amd64"},
+				"freebsd":   {"386", "amd64", "arm"},
+				"linux":     {"386", "amd64", "arm", "arm64", "ppc64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
+				"netbsd":    {"386", "amd64", "arm"},
+				"openbsd":   {"386", "amd64", "arm"},
+				"plan9":     {"386", "amd64"},
+				"solaris":   {"amd64"},
+				"windows":   {"386", "amd64"},
+			}
+			for _, TupleTarget := range conf.Targets {
+				for _, T := range TupleTarget.Tuples {
+					pair := TupleToDouble(T)
+					if len(s[pair[0]]) == 0 {
+						utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
 						os.Exit(0)
 					}
-					if i == 0 {
-						validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+					validPairs = append(validPairs, []string{pair[0]})
+					if len(pair[1:]) > 1 {
+						for i, target := range pair[1:] {
+							if contains(s[pair[0]], target) == false {
+								utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
+								os.Exit(0)
+							}
+							if i == 0 {
+								validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+							} else {
+								validPairs = append(validPairs, []string{pair[0], target})
+							}
+						}
 					} else {
-						validPairs = append(validPairs, []string{pair[0], target})
+						if contains(s[pair[0]], pair[1]) == false {
+							utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
+							os.Exit(0)
+						}
+						validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
 					}
 				}
-			} else {
-				if contains(s[pair[0]], pair[1]) == false {
-					utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
-					os.Exit(0)
-				}
-				validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
 			}
 		}
 	}
-	if len(conf.Steps.Body) != 0 {
-		for _, set := range conf.Steps.Body {
-			//if len(set) > 1 {
-			operands := set[1:]
-			if methods[set[0]] == nil {
-				utils.FPrint(c.Red, "Error", "Request "+set[0]+" does not exist.")
-				os.Exit(0)
-			}
-			methods[set[0]](operands)
-			//}
-		}
-	}
+	//if len(conf.Steps.Body) != 0 {
+	//	for _, set := range conf.Steps.Body {
+	//		operands := set[1:]
+	//		if methods[set[0]] == nil {
+	//			utils.FPrint(c.Red, "Error", "Request "+set[0]+" does not exist.")
+	//			os.Exit(0)
+	//		}
+	///		methods[set[0]](operands)
+	//	}
+	//}
 }

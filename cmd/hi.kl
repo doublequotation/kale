@@ -1,1 +1,4 @@
-run_cmd("mkdir wow")
+target("hello", {tuples : [ "linux//aarch64", "i386", "darwin//aarch64" ]});
+
+output("kale", {targets : ["targets//hello"], src : ["./main.go"]});
+run_cmd("ls");

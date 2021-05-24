@@ -19,9 +19,15 @@ message Target {
 message Output {
   optional string name = 1;
   optional int32 ref_id = 2;
-  repeated string output = 3;
-  repeated string srcs = 4;
-  repeated Target targets = 5;
+  enum languages {
+    golang = 0;
+    c = 1;
+    cpp = 2;
+  }
+  optional languages extension = 3;
+  repeated string output = 4;
+  repeated string srcs = 5;
+  repeated Target targets = 6;
 }
 
 message Main {

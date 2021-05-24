@@ -1,7 +1,6 @@
 package kl
 
 import (
-	"fmt"
 	"kale/utils"
 	"os"
 	"path/filepath"
@@ -48,7 +47,6 @@ func Collect(root string) string {
 			utils.FPrint(c.Red, "Error", err.Text)
 			utils.FPrint(c.Cyan, "Info", err.Location.File+":"+strconv.Itoa(err.Location.Line))
 			quick.Highlight(os.Stdout, err.Location.LineText, "javascript", "noop", "xcode")
-			fmt.Println(err.Location.File, err.Location.LineText, err.Location.Line)
 		}
 	}
 	return path + "/out.kl"

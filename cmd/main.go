@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"kale/config"
 	"kale/kl"
 	"kale/utils"
@@ -30,6 +29,12 @@ func err(e error) {
 func main() {
 	c := utils.InitColors()
 	logo(c.Green)
+
+	root, _ := filepath.Abs(".")
+	outFile := kl.Collect(root)
+	Config := &config.Main{}
+	kl.Run(outFile, Config)
+
 	// Create new parser object
 	parser := argparse.NewParser("kale", "A build system")
 	buildCmd := parser.NewCommand("build", "Will start building workspace")
@@ -44,11 +49,7 @@ func main() {
 		fmt.Print(parser.Usage(""))
 		os.Exit(0)
 	}
-	content := ""
 
-	root, _ := filepath.Abs(".")
-	outFile := kl.Collect(root)
-	kl.Run(outFile)
 	if docSupportCmd.Happened() {
 		fmt.Println(termenv.String("Info:").Foreground(c.Cyan).Bold(), "Languages supported")
 		fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "golang")
@@ -56,22 +57,8 @@ func main() {
 	} else if versionCmd.Happened() {
 		fmt.Println(termenv.String("1.1a").Foreground(c.Yellow))
 	} else if buildCmd.Happened() {
-		walkErr := filepath.Walk(".", func(path string, info os.FileInfo, wErr error) error {
-			if wErr == nil && info.Name() == ".KALE" {
-				p, absErr := filepath.Abs(path)
-				err(absErr)
-				configContent, fErr := ioutil.ReadFile(p)
-				content = string(configContent)
-				err(fErr)
-			}
-			if wErr != nil {
-				return wErr
-			}
-			return nil
-		})
-		err(walkErr)
-		conf := config.Read(string(content))
-		config.Do(conf)
+		//fmt.Println(con)
+		config.Do(Config)
 	} else {
 		fmt.Println(parser.Help(""))
 	}
