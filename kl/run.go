@@ -2,11 +2,12 @@ package kl
 
 import (
 	"encoding/json"
-	"fmt"
 	"kale/config"
 	"kale/utils"
 	"os"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -95,7 +96,6 @@ func Run(path string, Config *config.Main) {
 		}
 		t.Tuples = doubles
 		Config.Platforms = append(Config.Platforms, t)
-		fmt.Println(Config)
 		return nil
 	})
 	outfn, _ := v8go.NewFunctionTemplate(iso, func(info *v8go.FunctionCallbackInfo) *v8go.Value {
@@ -110,7 +110,19 @@ func Run(path string, Config *config.Main) {
 			utils.FPrint(c.Red, "Error", "Function output requires 2nd argument to be an object.")
 			os.Exit(0)
 		}
-		//tempOut := &config.Output{}
+		tempOut := &config.Output{}
+		outBytes, _ := (info.Args()[1]).MarshalJSON()
+		json.Unmarshal(outBytes, tempOut)
+		targets := []string{}
+		for _, t := range tempOut.Targets {
+			path := parsePath(t)
+			// appending indexes of targets into array as strings
+			// this will be used to find the target when building sources
+			index := sort.Search(len(Config.Platforms), func(i int) bool { return Config.Platforms[i].Name == &path.Property })
+			targets = append(targets, strconv.Itoa(index))
+		}
+		// redefining the output targets with the indexes array
+		tempOut.Targets = targets
 		return nil
 	})
 	runfn, _ := v8go.NewFunctionTemplate(iso, func(info *v8go.FunctionCallbackInfo) *v8go.Value {

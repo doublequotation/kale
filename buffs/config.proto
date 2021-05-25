@@ -27,7 +27,7 @@ message Output {
   optional languages extension = 3;
   repeated string output = 4;
   repeated string srcs = 5;
-  repeated Target targets = 6;
+  repeated string targets = 6;
 }
 
 message Main {
