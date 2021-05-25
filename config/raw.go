@@ -231,7 +231,7 @@ func Do(Conf *Main) {
 	//	}
 	for _, conf := range Conf.Outs {
 		if conf.Extension.String() == "cpp" {
-			if len(buildConfig.Proj.Target) != 0 {
+			if len(conf.Targets) != 0 {
 				utils.FPrint(c.Red, "Error", "Cpp does not support multiple build targets currently.")
 				utils.FPrint(c.Cyan, "Info", "This will be implemented later.")
 				fmt.Println(termenv.String("\t-").Foreground(c.Cyan).Bold(), "If you want to implement a feature, contribute to this project: ", termenv.String("https://github.com/doublequotation/kale").Foreground(c.Yellow))
@@ -250,32 +250,30 @@ func Do(Conf *Main) {
 				"windows":   {"386", "amd64"},
 			}
 			for _, TupleTarget := range conf.Targets {
-				for _, T := range TupleTarget.Tuples {
-					pair := TupleToDouble(T)
-					if len(s[pair[0]]) == 0 {
-						utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
-						os.Exit(0)
-					}
-					validPairs = append(validPairs, []string{pair[0]})
-					if len(pair[1:]) > 1 {
-						for i, target := range pair[1:] {
-							if contains(s[pair[0]], target) == false {
-								utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
-								os.Exit(0)
-							}
-							if i == 0 {
-								validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
-							} else {
-								validPairs = append(validPairs, []string{pair[0], target})
-							}
-						}
-					} else {
-						if contains(s[pair[0]], pair[1]) == false {
-							utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
+				pair := TupleToDouble(TupleTarget)
+				if len(s[pair[0]]) == 0 {
+					utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
+					os.Exit(0)
+				}
+				validPairs = append(validPairs, []string{pair[0]})
+				if len(pair[1:]) > 1 {
+					for i, target := range pair[1:] {
+						if contains(s[pair[0]], target) == false {
+							utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
 							os.Exit(0)
 						}
-						validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
+						if i == 0 {
+							validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+						} else {
+							validPairs = append(validPairs, []string{pair[0], target})
+						}
 					}
+				} else {
+					if contains(s[pair[0]], pair[1]) == false {
+						utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
+						os.Exit(0)
+					}
+					validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
 				}
 			}
 		}
