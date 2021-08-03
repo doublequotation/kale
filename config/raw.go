@@ -6,6 +6,7 @@ import (
 	"kale/utils"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -219,6 +220,15 @@ func contains(s []string, str string) bool {
 	return false
 }
 
+func TargetToDoubleA(target *Target) [][]string {
+	pairs := [][]string{}
+	for _, tup := range target.Tuples {
+		pairs = append(pairs, TupleToDouble(tup))
+	}
+
+	return pairs
+}
+
 func Do(Conf *Main) {
 	c := utils.InitColors()
 	//	methods := map[string]fn{
@@ -229,6 +239,7 @@ func Do(Conf *Main) {
 	//		"copy":   cpAny,
 	//		"build":  doBuild,
 	//	}
+	fmt.Println(Conf.Platforms[0].GetTuples())
 	for _, conf := range Conf.Outs {
 		if conf.Extension.String() == "cpp" {
 			if len(conf.Targets) != 0 {
@@ -250,30 +261,36 @@ func Do(Conf *Main) {
 				"windows":   {"386", "amd64"},
 			}
 			for _, TupleTarget := range conf.Targets {
-				pair := TupleToDouble(TupleTarget)
-				if len(s[pair[0]]) == 0 {
-					utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
-					os.Exit(0)
-				}
-				validPairs = append(validPairs, []string{pair[0]})
-				if len(pair[1:]) > 1 {
-					for i, target := range pair[1:] {
-						if contains(s[pair[0]], target) == false {
-							utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
-							os.Exit(0)
-						}
-						if i == 0 {
-							validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
-						} else {
-							validPairs = append(validPairs, []string{pair[0], target})
-						}
-					}
-				} else {
-					if contains(s[pair[0]], pair[1]) == false {
-						utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
+				index, _ := strconv.Atoi(TupleTarget)
+				t := Conf.Platforms[index]
+
+				pairs := TargetToDoubleA(t)
+
+				for _, pair := range pairs {
+					if len(s[pair[0]]) == 0 {
+						utils.FPrint(c.Red, "Error", "Could not find build target operating system: "+pair[0])
 						os.Exit(0)
 					}
-					validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
+					validPairs = append(validPairs, []string{pair[0]})
+					if len(pair[1:]) > 1 {
+						for i, target := range pair[1:] {
+							if contains(s[pair[0]], target) == false {
+								utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+target)
+								os.Exit(0)
+							}
+							if i == 0 {
+								validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], target)
+							} else {
+								validPairs = append(validPairs, []string{pair[0], target})
+							}
+						}
+					} else {
+						if contains(s[pair[0]], pair[1]) == false {
+							utils.FPrint(c.Red, "Error", pair[0]+" does not have architecure: "+pair[1])
+							os.Exit(0)
+						}
+						validPairs[len(validPairs)-1] = append(validPairs[len(validPairs)-1], pair[1])
+					}
 				}
 			}
 		}

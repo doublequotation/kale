@@ -30,7 +30,10 @@ func Collect(root string) string {
 	}
 	home, _ := os.UserHomeDir()
 	path := home + "/.config/kale/"
-	os.WriteFile(path+"base.kl", []byte(imports), 0644)
+	err := os.WriteFile(path+"base.kl", []byte(imports), 0644)
+	if err != nil {
+		utils.FPrint(c.Red, "Error", err)
+	}
 	r := api.Build(api.BuildOptions{
 		EntryPoints:       []string{path + "base.kl"},
 		Outfile:           path + "out.kl",

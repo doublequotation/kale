@@ -118,11 +118,17 @@ func Run(path string, Config *config.Main) {
 			path := parsePath(t)
 			// appending indexes of targets into array as strings
 			// this will be used to find the target when building sources
-			index := sort.Search(len(Config.Platforms), func(i int) bool { return Config.Platforms[i].Name == &path.Property })
+			index := sort.Search(len(Config.Platforms), func(i int) bool {
+				return strings.ToLower(*Config.Platforms[i].Name) == strings.ToLower(path.Property)
+			})
 			targets = append(targets, strconv.Itoa(index))
 		}
+		//tempOut.Extension.String() != "golang" || tempOut.Extension.String() != "cpp" || tempOut.Extension.String() != "c" {
 		// redefining the output targets with the indexes array
 		tempOut.Targets = targets
+
+		Config.Outs = append(Config.Outs, tempOut)
+
 		return nil
 	})
 	runfn, _ := v8go.NewFunctionTemplate(iso, func(info *v8go.FunctionCallbackInfo) *v8go.Value {

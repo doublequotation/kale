@@ -1,5 +1,0 @@
-target("hello", {tuples : [ "linux//aarch64", "i386", "aarcch32" ]});
-
-output("kale", {targets : ["targets//hello"], src : ["./main.go"]});
-
-run_cmd("ls");
